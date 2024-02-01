@@ -27,5 +27,9 @@ uvicorn main:app --reload
 For example with curl
 
 ```cmd
-curl --raw "http://localhost:8000"
+$ curl --raw "http://localhost:8000"
+{"name": "Jane", "age": 25}
+{"name": "Bob", "age": 35}
+{"status": "process A"}
+{"status": "done"}
 ```

@@ -20,16 +20,11 @@ class JsonStreamingResponse(StreamingResponse):
         )
         chunk: BaseModel
         async for chunk in self.body_iterator:
-            chunk = json.dumps({chunk.__class__.__name__.lower(): chunk.model_dump()}) + "\n"
+            chunk = json.dumps(chunk.model_dump()) + "\n"
             if not isinstance(chunk, bytes):
                 chunk = chunk.encode(self.charset)
             await send({"type": "http.response.body", "body": chunk, "more_body": True})
         await send({"type": "http.response.body", "body": b"", "more_body": False})
-
-
-def union_response_models(base_models: List[Type[BaseModel]]) -> Type[BaseModel]:
-    response_models = [create_model(f"Response{m.__name__}", **{m.__name__.lower(): (m, ...)}) for m in base_models]
-    return Union[tuple(response_models)]
 
 
 app = FastAPI()
@@ -41,27 +36,27 @@ class Item(BaseModel):
 
 
 class Status(BaseModel):
-    text: str
+    status: str
 
 
 def generate_ndjson():
     data = [
         Item(name="Jane", age=25),
         Item(name="Bob", age=35),
-        Status(text="process A"),
+        Status(status="process A"),
     ]
     try:
         for item in data:
             time.sleep(random.uniform(0.8, 1.7))
             yield item
     except:
-        yield Status(text="Something is wrong")
+        yield Status(status="Something is wrong")
     finally:
         time.sleep(random.uniform(0.8, 1.7))
-        yield Status(text="done")
+        yield Status(status="done")
 
 
-@app.get("/", response_model=union_response_models([Item, Status]))
+@app.get("/", response_model=Union[Item, Status])
 def get_ndjson_stream():
     return JsonStreamingResponse(
         generate_ndjson(),
